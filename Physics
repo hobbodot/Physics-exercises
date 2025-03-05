@@ -1,0 +1,74 @@
+import numpy as np
+import sympy as sp
+import matplotlib.pyplot as plt
+
+# Definição de variáveis simbólicas
+t, g, k, v0, theta = sp.symbols("t g k v0 theta")
+x = sp.Function("x")(t)
+y = sp.Function("y")(t)
+
+# Definição das equações diferenciais
+eq1 = sp.Eq(sp.diff(x, t, t), -k * sp.diff(x, t))  # d²x/dt² = -k*(dx/dt)
+eq2 = sp.Eq(sp.diff(y, t, t), -g - k * sp.diff(y, t))  # d²y/dt² = -g - k*(dy/dt)
+
+# Resolução das equações diferenciais
+sol_x = sp.dsolve(eq1, x).rhs  # Solução para x(t)
+sol_y = sp.dsolve(eq2, y).rhs  # Solução para y(t)
+
+# Definição das condições iniciais
+C1, C2, C3, C4 = sp.symbols("C1 C2 C3 C4")
+cond_x = [sol_x.subs(t, 0) - 0, sp.diff(sol_x, t).subs(t, 0) - v0 * sp.cos(theta)]  # x(0) = 0, dx/dt(0) = v0*cos(theta)
+cond_y = [sol_y.subs(t, 0) - 0, sp.diff(sol_y, t).subs(t, 0) - v0 * sp.sin(theta)]  # y(0) = 0, dy/dt(0) = v0*sin(theta)
+
+# Resolução para as constantes de integração
+constants_x = sp.solve(cond_x, (C1, C2))  # Resolve para C1 e C2
+constants_y = sp.solve(cond_y, (C3, C4))  # Resolve para C3 e C4
+
+# Substituição das constantes nas soluções
+sol_x = sol_x.subs(constants_x)  # Substitui C1 e C2 em sol_x
+sol_y = sol_y.subs(constants_y)  # Substitui C3 e C4 em sol_y
+
+# Valores numéricos
+g_val = 9.81  # Aceleração da gravidade (m/s²)
+k_val = 0.1  # Coeficiente de resistência do ar (kg/s)
+v0_val = 50  # Velocidade inicial (m/s)
+theta_val = np.deg2rad(45)  # Ângulo inicial em radianos
+
+# Substituição dos valores numéricos nas soluções simbólicas
+sol_x_num = sol_x.subs({g: g_val, k: k_val, v0: v0_val, theta: theta_val})
+sol_y_num = sol_y.subs({g: g_val, k: k_val, v0: v0_val, theta: theta_val})
+
+# Conversão para funções numéricas
+x_func = sp.lambdify(t, sol_x_num, 'numpy')
+y_func = sp.lambdify(t, sol_y_num, 'numpy')
+
+# Gerando os pontos para plotagem
+t_vals = np.linspace(0, 10, 500)  # Tempo de 0 a 10 segundos
+x_vals = x_func(t_vals)  # Calcula x(t)
+y_vals = y_func(t_vals)  # Calcula y(t)
+
+# Verificando os tipos e valores
+print("Tipo de x_vals:", type(x_vals))
+print("Tipo de y_vals:", type(y_vals))
+print("Primeiros valores de y_vals:", y_vals[:5])
+
+# Criando um array booleano para filtrar os valores de y >= 0
+valid_indices = y_vals >= 0  # Array booleano: True para y >= 0, False caso contrário
+
+# Filtrando os valores de x e y usando o array booleano
+x_vals_filtered = x_vals[valid_indices]  # Apenas valores onde y >= 0
+y_vals_filtered = y_vals[valid_indices]  # Apenas valores onde y >= 0
+
+# Verificando os valores filtrados
+print("Primeiros valores de x_vals_filtered:", x_vals_filtered[:5])
+print("Primeiros valores de y_vals_filtered:", y_vals_filtered[:5])
+
+# Plotagem do gráfico
+plt.figure(figsize=(8, 5))
+plt.plot(x_vals_filtered, y_vals_filtered, label="Trajetória do Projétil")
+plt.xlabel("Distância (m)")
+plt.ylabel("Altura (m)")
+plt.title("Movimento de um Projétil com Resistência do Ar")
+plt.grid()
+plt.legend()
+plt.show()
